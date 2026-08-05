@@ -52,6 +52,19 @@ const Weatherchecker = () => {
     }
   };
 
+  const useCurrentLocation = () => {
+    setLoading(true);
+
+    navigator.geolocation.getCurrentPosition(async ({ coords }) => {
+      const url = `http://api.openweathermap.org/data/2.5/weather?lat=${coords.longitude}&lon=${coords.latitude}&units=Metric&appid=${api_key}`;
+      console.log("Loading weather with API key:", api_key);
+      const response = await fetch(url);
+      const currentLocationData = await response.json();
+      setData(currentLocationData);
+      setLoading(false);
+    });
+  };
+
   const weatherImages = {
     Clear: sunny,
     Clouds: cloudy,
@@ -129,6 +142,10 @@ const Weatherchecker = () => {
             />
             <i className="fa-solid fa-magnifying-glass" onClick={search}></i>
           </div>
+          <button className="current-location" type="button" onClick={useCurrentLocation}>
+            <i className="fa-solid fa-location-crosshairs"></i>
+            Use my location
+          </button>
         </div>
         {loading ? (<img className="loader" src={loadingGif} alt="loading"/>) : data.notFound ? (
           <div className="not-found">Not Found 😒</div>
