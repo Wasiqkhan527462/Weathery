@@ -96,6 +96,21 @@
     cursor: pointer;
 }
 
+.current-location {
+    align-self: center;
+    border: 0;
+    border-radius: 2rem;
+    background-color: rgba(255, 255, 255, 0.35);
+    color: #2f2e57;
+    cursor: pointer;
+    font-size: 1.3rem;
+    padding: 0.8rem 1.4rem;
+}
+
+.current-location i {
+    margin-right: 0.6rem;
+}
+
 .weather-type {
     position: absolute;
     top: 48%;
