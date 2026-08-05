@@ -3,42 +3,58 @@ import cloudy from "../assets/images/cloudy.png";
 import rainy from "../assets/images/rainy.png";
 import snowy from "../assets/images/snowy.png";
 import loadingGif from "../assets/images/loading.gif";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 
 const Weatherchecker = () => {
   const [data, setData] = useState({});
   const [location, setLocation] = useState("");
-  const [loading, setLoading] = useState(false)
-  console.log(import.meta.env.VITE_API_KEY)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const api_key = import.meta.env.VITE_API_KEY;
 
+  const fetchWeather = useCallback(async (city, signal) => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=Metric&appid=${api_key}`;
+      const response = await fetch(url, { signal });
+      const weatherData = await response.json();
+
+      if (!response.ok || weatherData.cod !== 200) {
+        setData({ notFound: true });
+        return false;
+      }
+
+      setData(weatherData);
+      return true;
+    } catch (requestError) {
+      if (requestError.name !== "AbortError") {
+        setError("Unable to load weather right now. Please try again.");
+      }
+      return false;
+    } finally {
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
+    }
+  }, [api_key]);
+
   useEffect(() => {
-    const fetchDefaultWeather = async () => {
-      setLoading(true)
-      const defaultLocation = "Peshawar";
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${defaultLocation}&units=Metric&appid=${api_key}`;
-      const res = await fetch(url);
-      const defaultData = await res.json();
-      setData(defaultData);
-      setLocation("");
-      setLoading(false)
-    };
-    fetchDefaultWeather();
-  }, []);
+    const controller = new AbortController();
+    fetchWeather("Peshawar", controller.signal);
+
+    return () => controller.abort();
+  }, [fetchWeather]);
 
   const search = async () => {
-    if (location.trim() !== "") {
-      const url = `https://api.openweathermap.org/data/2.5/weather?q=${location}&units=Metric&appid=${api_key}`;
-      const res = await fetch(url);
-      const searchData = await res.json();
-      if (searchData.cod !== 200) {
-        setData({ notFound: true });
-      } else {
-        setData(searchData);
+    const city = location.trim();
+    if (city && !loading) {
+      const didFindWeather = await fetchWeather(city);
+      if (didFindWeather) {
         setLocation("");
       }
-      setLoading(false)
     }
   };
 
@@ -126,11 +142,23 @@ const Weatherchecker = () => {
               value={location}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
+              disabled={loading}
+              aria-label="Search by city"
             />
-            <i className="fa-solid fa-magnifying-glass" onClick={search}></i>
+            <button
+              className="search-button"
+              type="button"
+              onClick={search}
+              disabled={loading || !location.trim()}
+              aria-label="Search"
+            >
+              <i className="fa-solid fa-magnifying-glass"></i>
+            </button>
           </div>
         </div>
-        {loading ? (<img className="loader" src={loadingGif} alt="loading"/>) : data.notFound ? (
+        {loading ? (<img className="loader" src={loadingGif} alt="Loading weather" />) : error ? (
+          <div className="not-found" role="alert">{error}</div>
+        ) : data.notFound ? (
           <div className="not-found">Not Found 😒</div>
         ) : (
           <>
